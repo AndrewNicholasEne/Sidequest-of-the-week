@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeeklyQuestSender", "handlers/WeeklyQuestSender/WeeklyQuestSender.csproj", "{EDEC3F61-5AA9-4AB7-B403-DA14BB75F510}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeeklyQuestSender", "handlers\WeeklyQuestSender\src\WeeklyQuestSender\WeeklyQuestSender.csproj", "{03A027E5-C6A8-457B-A042-6C7CCCAC765F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeeklyQuestSender.Tests", "handlers\WeeklyQuestSender\test\WeeklyQuestSender.Tests\WeeklyQuestSender.Tests.csproj", "{0DA9F402-E60F-4449-AF91-6AA26A7C9B26}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,9 +10,13 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{EDEC3F61-5AA9-4AB7-B403-DA14BB75F510}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EDEC3F61-5AA9-4AB7-B403-DA14BB75F510}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EDEC3F61-5AA9-4AB7-B403-DA14BB75F510}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EDEC3F61-5AA9-4AB7-B403-DA14BB75F510}.Release|Any CPU.Build.0 = Release|Any CPU
+		{03A027E5-C6A8-457B-A042-6C7CCCAC765F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03A027E5-C6A8-457B-A042-6C7CCCAC765F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03A027E5-C6A8-457B-A042-6C7CCCAC765F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03A027E5-C6A8-457B-A042-6C7CCCAC765F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0DA9F402-E60F-4449-AF91-6AA26A7C9B26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0DA9F402-E60F-4449-AF91-6AA26A7C9B26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0DA9F402-E60F-4449-AF91-6AA26A7C9B26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0DA9F402-E60F-4449-AF91-6AA26A7C9B26}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
