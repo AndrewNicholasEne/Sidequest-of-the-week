@@ -55,3 +55,34 @@ resource "aws_dynamodb_table" "subscriber_table" {
     Environment = "dev"
   }
 }
+
+resource "aws_lambda_function" "weekly_quest_sender" {
+  function_name = "weekly-quest-sender"
+  role          = aws_iam_role.lambda_exec.arn
+  handler       = "WeeklyQuestSender::WeeklyQuestSender.Function::FunctionHandler"
+  runtime       = "dotnet8"
+  timeout       = 30
+  memory_size   = 128
+  filename = "../handlers/WeeklyQuestSender/src/WeeklyQuestSender/artifacts/WeeklyQuestSender.zip"
+  source_code_hash = filebase64sha256("../handlers/WeeklyQuestSender/src/WeeklyQuestSender/artifacts/WeeklyQuestSender.zip")
+}
+
+resource "aws_iam_role" "lambda_exec" {
+  name = "weekly-quest-sender-lambda-exec"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_basic" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
