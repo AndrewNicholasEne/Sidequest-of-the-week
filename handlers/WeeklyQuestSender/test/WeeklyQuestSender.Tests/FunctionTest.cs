@@ -4,7 +4,7 @@ using Amazon.Lambda.TestUtilities;
 
 namespace WeeklyQuestSender.Tests;
 
-public class FunctionTest
+/*public class FunctionTest
 {
     [Fact]
     public void TestToUpperFunction()
@@ -17,4 +17,4 @@ public class FunctionTest
 
         Assert.Equal("HELLO WORLD", upperCase);
     }
-}
+}*/

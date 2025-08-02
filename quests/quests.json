@@ -1,0 +1,44 @@
+﻿{
+  "quests": [
+    {
+      "id": 1,
+      "description": "Engage in a nonproductive creative hobby for an evening"
+    },
+    {
+      "id": 2,
+      "description": "Spend an evening reading"
+    },
+    {
+      "id": 3,
+      "description": "Engage in a social hobby such as sports, dancing or a class teaching something"
+    },
+    {
+      "id": 4,
+      "description": "Try preparing a meal from a recipe you have not tried before"
+    },
+    {
+      "id": 5,
+      "description": "Go for a walk, leave the phone at home and just be there with your thoughts"
+    },
+    {
+      "id": 6,
+      "description": "One day this week, focus on how tired you feel and when, try take short breaks and be gentler with your body on that day."
+    },
+    {
+      "id": 7,
+      "description": "Spend one day this week with the phone turned off."
+    },
+    {
+      "id": 8,
+      "description": "Spend some time in nature this week, see if there's any place new you can go to"
+    },
+    {
+      "id": 9,
+      "description": "Schedule some social time this week, be it with friends, family or loved ones"
+    },
+    {
+      "id": 10,
+      "description": "Focus on the quality of sleep this week, try to make it as restful as you can"
+    }
+  ]
+}

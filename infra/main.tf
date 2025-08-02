@@ -1,20 +1,4 @@
-﻿terraform {
-  backend "s3" {
-    bucket         = "sidequest-terraform-state"
-    key            = "sidequest/terraform.tfstate"
-    region         = "eu-north-1"
-    dynamodb_table = "terraform-locks"
-  }
-  
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 6.0"
-    }
-  }
-}
-
-provider "aws" {}
+﻿provider "aws" {}
 
 resource "aws_s3_bucket" "quest_store" {
   bucket        = "sidequest-quests"
@@ -57,7 +41,13 @@ resource "aws_dynamodb_table" "subscriber_table" {
 }
 
 resource "aws_lambda_function" "weekly_quest_sender" {
-  function_name = "weekly-quest-sender"
+  environment {
+    variables = {
+      QUEST_BUCKET = aws_s3_bucket.quest_store.bucket
+    }
+  }
+  
+  function_name = var.lambda_function_name
   role          = aws_iam_role.lambda_exec.arn
   handler       = "WeeklyQuestSender::WeeklyQuestSender.Function::FunctionHandler"
   runtime       = "dotnet8"
@@ -106,6 +96,27 @@ resource "aws_lambda_permission" "allow_eventbridge" {
 
 resource "aws_cloudwatch_event_target" "send_weekly_quest" {
   rule      = aws_cloudwatch_event_rule.weekly_cron.name
-  target_id = "weeklyQuestSender"
+  target_id = var.lambda_function_name
   arn       = aws_lambda_function.weekly_quest_sender.arn
+}
+
+resource "aws_iam_policy" "lambda_quest_s3_access" {
+  name = "lambda-quest-s3-read"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = [
+          "s3:GetObject"
+        ],
+        Effect   = "Allow",
+        Resource = "arn:aws:s3:::sidequest-quests/quests.json"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_s3_attach" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = aws_iam_policy.lambda_quest_s3_access.arn
 }
