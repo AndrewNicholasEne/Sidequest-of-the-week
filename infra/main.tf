@@ -86,3 +86,26 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
+
+resource "aws_cloudwatch_event_rule" "weekly_cron" {
+  name                = "sidequest-weekly-cron"
+  schedule_expression = "cron(0 8 ? * MON *)"
+
+  tags = {
+    Environment = var.env
+  }
+}
+
+resource "aws_lambda_permission" "allow_eventbridge" {
+  statement_id  = "AllowExecutionFromEventBridge"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.weekly_quest_sender.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.weekly_cron.arn
+}
+
+resource "aws_cloudwatch_event_target" "send_weekly_quest" {
+  rule      = aws_cloudwatch_event_rule.weekly_cron.name
+  target_id = "weeklyQuestSender"
+  arn       = aws_lambda_function.weekly_quest_sender.arn
+}
