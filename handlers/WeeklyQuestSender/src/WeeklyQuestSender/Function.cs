@@ -16,27 +16,39 @@ public class Function(IAmazonS3 s3Client)
 
     public Function() : this(new AmazonS3Client()) {}
 
-    public async Task<string> FunctionHandler(string input, ILambdaContext context)
+    public async Task<string> FunctionHandler(object _, ILambdaContext context)
     {
-        var bucket = Environment.GetEnvironmentVariable(BucketNameEnv);
+        var bucket = Environment.GetEnvironmentVariable("QUEST_BUCKET");
+        context.Logger.LogLine($"Bucket: {bucket}");
+        context.Logger.LogLine($"About to fetch {ObjectKey}");
 
-        if (string.IsNullOrEmpty(bucket))
-            throw new Exception("QUEST_BUCKET environment variable is not set.");
+        var request = new GetObjectRequest { BucketName = bucket, Key = ObjectKey };
 
-        var request = new GetObjectRequest
+        try
         {
-            BucketName = bucket,
-            Key = ObjectKey
-        };
+            using var response = await s3Client.GetObjectAsync(request);
+            using var reader = new StreamReader(response.ResponseStream);
+            var json = await reader.ReadToEndAsync();
+            context.Logger.LogLine($"Raw JSON: {json}");
 
-        using var response = await s3Client.GetObjectAsync(request);
-        using var reader = new StreamReader(response.ResponseStream);
-        var json = await reader.ReadToEndAsync();
+            var questList = JsonSerializer.Deserialize<QuestList>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-        var questList = JsonSerializer.Deserialize<QuestList>(json);
+            if (questList?.Quests == null || !questList.Quests.Any())
+            {
+                context.Logger.LogLine("No quests found in parsed JSON.");
+                return "No quest found.";
+            }
 
-        var selectedQuest = questList?.Quests?.OrderBy(q => Guid.NewGuid()).FirstOrDefault();
+            var selectedQuest = questList.Quests.OrderBy(q => Guid.NewGuid()).FirstOrDefault();
+            context.Logger.LogLine($"Selected quest: {selectedQuest?.Description}");
 
-        return selectedQuest?.Description ?? "No quest found.";
+            return selectedQuest?.Description ?? "No quest found.";
+        }
+        catch (Exception ex)
+        {
+            context.Logger.LogLine($"Exception: {ex}");
+            return "Error reading quest.";
+        }
     }
+
 }
