@@ -45,6 +45,8 @@ resource "aws_lambda_function" "weekly_quest_sender" {
     variables = {
       QUEST_BUCKET = aws_s3_bucket.quest_store.bucket
       SUBSCRIBERS_TABLE = aws_dynamodb_table.subscriber_table.name
+      SES_TEMPLATE     = "QuestMail"
+      SES_FROM         = "eneandrei@outlook.com"  
     }
   }
   
@@ -141,4 +143,26 @@ resource "aws_iam_policy" "lambda_dynamo_access" {
 resource "aws_iam_role_policy_attachment" "lambda_dynamo_attach" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = aws_iam_policy.lambda_dynamo_access.arn
+}
+
+resource "aws_iam_policy" "lambda_ses_send" {
+  name = "lambda-ses-send"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = [
+          "ses:SendTemplatedEmail",
+          "ses:SendBulkTemplatedEmail"
+        ],
+        Effect   = "Allow",
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_ses_attach" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = aws_iam_policy.lambda_ses_send.arn
 }

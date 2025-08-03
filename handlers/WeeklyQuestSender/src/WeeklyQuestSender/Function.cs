@@ -4,6 +4,8 @@ using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.Core;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Amazon.SimpleEmailV2;
+using Amazon.SimpleEmailV2.Model;
 using WeeklyQuestSender.Models;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
@@ -16,8 +18,10 @@ public class Function(IAmazonS3 s3Client, AmazonDynamoDBClient dbClient)
     private const string BucketNameEnv = "QUEST_BUCKET";
     private const string ObjectKey = "quests.json";
     private const string TableNameEnv = "SUBSCRIBERS_TABLE";
-    
-    public Function() : this(new AmazonS3Client(), new AmazonDynamoDBClient()) {}
+
+    public Function() : this(new AmazonS3Client(), new AmazonDynamoDBClient())
+    {
+    }
 
     public async Task<string> FunctionHandler(object _, ILambdaContext context)
     {
@@ -25,7 +29,7 @@ public class Function(IAmazonS3 s3Client, AmazonDynamoDBClient dbClient)
         context.Logger.LogLine($"Bucket: {bucket}");
         context.Logger.LogLine($"About to fetch {ObjectKey}");
 
-        var request = new GetObjectRequest { BucketName = bucket, Key = ObjectKey };
+        var request = new GetObjectRequest {BucketName = bucket, Key = ObjectKey};
 
         try
         {
@@ -34,7 +38,8 @@ public class Function(IAmazonS3 s3Client, AmazonDynamoDBClient dbClient)
             var json = await reader.ReadToEndAsync();
             context.Logger.LogLine($"Raw JSON: {json}");
 
-            var questList = JsonSerializer.Deserialize<QuestList>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var questList = JsonSerializer.Deserialize<QuestList>(json,
+                new JsonSerializerOptions {PropertyNameCaseInsensitive = true});
 
             if (questList?.Quests == null || !questList.Quests.Any())
             {
@@ -46,6 +51,8 @@ public class Function(IAmazonS3 s3Client, AmazonDynamoDBClient dbClient)
             context.Logger.LogLine($"Selected quest: {selectedQuest?.Description}");
 
             var subscribers = await GetConfirmedSubscribersAsync(context);
+
+            await SendQuestToSubscribers(selectedQuest!.Description, subscribers, context);
 
             return selectedQuest?.Description ?? "No quest found.";
         }
@@ -68,11 +75,48 @@ public class Function(IAmazonS3 s3Client, AmazonDynamoDBClient dbClient)
 
         var response = await dbClient.ScanAsync(scanRequest);
         var subscribers = response.Items
-            .Select(item => new Subscriber 
+            .Select(item => new Subscriber
                 {Id = item["id"].S, Email = item["email"].S,})
             .ToList();
 
         context.Logger.LogLine($"Found {subscribers.Count} confirmed subscribers.");
         return subscribers;
+    }
+
+    private async Task SendQuestToSubscribers(string quest, List<Subscriber> subscribers, ILambdaContext context)
+    {
+        var ses = new AmazonSimpleEmailServiceV2Client();
+        var templateName = Environment.GetEnvironmentVariable("SES_TEMPLATE");
+        var fromAddress = Environment.GetEnvironmentVariable("SES_FROM");
+
+        foreach (var sub in subscribers)
+        {
+            var request = new SendEmailRequest
+            {
+                FromEmailAddress = fromAddress,
+                Destination = new Destination
+                {
+                    ToAddresses = [sub.Email]
+                },
+                Content = new EmailContent
+                {
+                    Template = new Template
+                    {
+                        TemplateName = templateName,
+                        TemplateData = JsonSerializer.Serialize(new {quest = quest})
+                    }
+                }
+            };
+
+            try
+            {
+                var response = await ses.SendEmailAsync(request);
+                context.Logger.LogLine($"Email sent to {sub.Email}, SES status: {response.HttpStatusCode}");
+            }
+            catch (Exception ex)
+            {
+                context.Logger.LogLine($"Failed to send to {sub.Email}: {ex.Message}");
+            }
+        }
     }
 }
