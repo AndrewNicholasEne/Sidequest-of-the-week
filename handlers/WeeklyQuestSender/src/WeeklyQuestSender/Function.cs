@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.Core;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -9,12 +11,13 @@ using WeeklyQuestSender.Models;
 
 namespace WeeklyQuestSender;
 
-public class Function(IAmazonS3 s3Client)
+public class Function(IAmazonS3 s3Client, AmazonDynamoDBClient dbClient)
 {
     private const string BucketNameEnv = "QUEST_BUCKET";
     private const string ObjectKey = "quests.json";
-
-    public Function() : this(new AmazonS3Client()) {}
+    private const string TableNameEnv = "SUBSCRIBERS_TABLE";
+    
+    public Function() : this(new AmazonS3Client(), new AmazonDynamoDBClient()) {}
 
     public async Task<string> FunctionHandler(object _, ILambdaContext context)
     {
@@ -42,6 +45,8 @@ public class Function(IAmazonS3 s3Client)
             var selectedQuest = questList.Quests.OrderBy(q => Guid.NewGuid()).FirstOrDefault();
             context.Logger.LogLine($"Selected quest: {selectedQuest?.Description}");
 
+            var subscribers = await GetConfirmedSubscribersAsync(context);
+
             return selectedQuest?.Description ?? "No quest found.";
         }
         catch (Exception ex)
@@ -51,4 +56,23 @@ public class Function(IAmazonS3 s3Client)
         }
     }
 
+    private async Task<List<Subscriber>> GetConfirmedSubscribersAsync(ILambdaContext context)
+    {
+        var table = Environment.GetEnvironmentVariable(TableNameEnv);
+        context.Logger.LogLine($"DynamoDB table: {table}");
+
+        var scanRequest = new ScanRequest
+        {
+            TableName = table,
+        };
+
+        var response = await dbClient.ScanAsync(scanRequest);
+        var subscribers = response.Items
+            .Select(item => new Subscriber 
+                {Id = item["id"].S, Email = item["email"].S,})
+            .ToList();
+
+        context.Logger.LogLine($"Found {subscribers.Count} confirmed subscribers.");
+        return subscribers;
+    }
 }

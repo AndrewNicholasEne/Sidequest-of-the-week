@@ -44,6 +44,7 @@ resource "aws_lambda_function" "weekly_quest_sender" {
   environment {
     variables = {
       QUEST_BUCKET = aws_s3_bucket.quest_store.bucket
+      SUBSCRIBERS_TABLE = aws_dynamodb_table.subscriber_table.name
     }
   }
   
@@ -119,4 +120,25 @@ resource "aws_iam_policy" "lambda_quest_s3_access" {
 resource "aws_iam_role_policy_attachment" "lambda_s3_attach" {
   role       = aws_iam_role.lambda_exec.name
   policy_arn = aws_iam_policy.lambda_quest_s3_access.arn
+}
+
+resource "aws_iam_policy" "lambda_dynamo_access" {
+  name = "lambda-dynamo-read"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = [
+          "dynamodb:Scan"
+        ],
+        Effect   = "Allow",
+        Resource = aws_dynamodb_table.subscriber_table.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_dynamo_attach" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = aws_iam_policy.lambda_dynamo_access.arn
 }
